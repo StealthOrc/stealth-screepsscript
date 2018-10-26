@@ -16,6 +16,10 @@ module.exports.loop = function () {
         Game.spawns['Spawn1'].pos.y - 1.25,
         {align: 'left', opacity: 0.8});
 
+    var Room = Game.spawns['Spawn1'].room;
+    var Position = new RoomPosition(45,0,Room.name);
+    Room.visual.text('Next Creep: ', Position.x, Position.y);
+
     // check for memory entries of died creeps by iterating over Memory.creeps
     for (let name in Memory.creeps) {
         // and checking if the creep is still alive
@@ -124,7 +128,7 @@ module.exports.loop = function () {
     }
     // //SPAWN MINER
     else
-     if(numberOfMiners < minMiners && numberOfMiners <= numberOfCouriers){
+     if(numberOfMiners < minMiners && numberOfMiners <= numberOfCouriers && energy >= 800){
         role = 'miner';
         for(let spawnName in Game.spawns){
             let spawn = Game.spawns[spawnName];
@@ -244,6 +248,7 @@ module.exports.loop = function () {
 
     Game.spawns.Spawn1.memory.TicksToWaitForStatus = Game.spawns.Spawn1.memory.TicksToWaitForStatus-1;
     if(Game.spawns.Spawn1.memory.TicksToWaitForStatus <= 0){
+        //write to spawn memory
         console.log('Next creep: '+role);
         console.log('Harvesters: '+numberOfHarvesters);
         console.log('Miners:       '+numberOfMiners);
