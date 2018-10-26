@@ -151,7 +151,7 @@ module.exports.loop = function () {
         }
     }
     //SPAWN COURIER
-    else if(numberOfCouriers < minCouriers){
+    else if(numberOfCouriers < minCouriers && energy >= 800){
         var role = 'courier';
         for(let spawnName in Game.spawns){
             let spawn = Game.spawns[spawnName];
