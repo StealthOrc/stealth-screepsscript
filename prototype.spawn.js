@@ -26,6 +26,7 @@ module.exports = function() {
         function(energy, roleName) {
             // create a balanced body as big as possible with the given energy
             var cName = roleName + Game.time;
+            if (energy > 3200) { energy = 3200}
             var numberOfParts = Math.floor(energy / 200);
             var body = [];
             for (let i = 0; i < numberOfParts; i++) {
@@ -39,6 +40,7 @@ module.exports = function() {
             }
 
             // create creep with the created body and the given role
+            // console.log(body);
             return this.spawnCreep(body, cName, { memory: {
                 role: roleName,
                 working: false

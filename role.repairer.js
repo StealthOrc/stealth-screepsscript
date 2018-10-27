@@ -38,7 +38,7 @@ module.exports = {
             else {
                 // look for construction sites
                 roleBuilder.run(creep);
-                }
+            }
         }
         // if creep is supposed to harvest energy from source
         else {

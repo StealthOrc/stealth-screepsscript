@@ -8,16 +8,18 @@ var roleBuilder = require('role.builder');
 var roleRepairer = require('role.repairer');
 var roleLDHarvester = require('role.LDHarvester')
 
-module.exports.loop = function () {
-// room W26N11
+module.exports.loop = function() {
+    // room W26N11
     Game.spawns['Spawn1'].room.visual.text(
-        'Energy: '+Game.spawns['Spawn1'].room.energyAvailable+'/'+Game.spawns['Spawn1'].room.energyCapacityAvailable,
-        Game.spawns['Spawn1'].pos.x-2,
-        Game.spawns['Spawn1'].pos.y - 1.25,
-        {align: 'left', opacity: 0.8});
+        'Energy: ' + Game.spawns['Spawn1'].room.energyAvailable + '/' + Game.spawns['Spawn1'].room.energyCapacityAvailable,
+        Game.spawns['Spawn1'].pos.x - 2,
+        Game.spawns['Spawn1'].pos.y - 1.25, {
+            align: 'left',
+            opacity: 0.8
+        });
 
     var Room = Game.spawns['Spawn1'].room;
-    var Position = new RoomPosition(45,0,Room.name);
+    var Position = new RoomPosition(45, 0, Room.name);
     Room.visual.text('Next Creep: ', Position.x, Position.y);
 
     // check for memory entries of died creeps by iterating over Memory.creeps
@@ -28,7 +30,7 @@ module.exports.loop = function () {
             delete Memory.creeps[name];
         }
     }
-    for(let spawnName in Game.spawns){
+    for (let spawnName in Game.spawns) {
         let spawn = Game.spawns[spawnName];
         spawn.setMinRoles();
     }
@@ -65,17 +67,13 @@ module.exports.loop = function () {
         // if creep is builder, call builder script
         else if (creep.memory.role == 'builder') {
             roleBuilder.run(creep);
-        }
-        else if (creep.memory.role == 'repairer') {
+        } else if (creep.memory.role == 'repairer') {
             roleRepairer.run(creep);
-        }
-        else if(creep.memory.role == 'miner'){
+        } else if (creep.memory.role == 'miner') {
             roleMiner.run(creep, numberOfMiners, numberMyCreeps, currEnergy, energy);
-        }
-        else if(creep.memory.role == 'courier'){
+        } else if (creep.memory.role == 'courier') {
             roleCourier.run(creep);
-        }
-        else if(creep.memory.role =='ldHarvester'){
+        } else if (creep.memory.role == 'ldHarvester') {
             roleLDHarvester.run(creep);
         }
     }
@@ -112,14 +110,22 @@ module.exports.loop = function () {
     // setup some minimum numbers for different roles
     var name = undefined;
     var role = undefined;
+    var containers;
+    for (let source of sources) {
+        if (!_.some(creepsInRoom, c => c.memory.role == role && c.memory.sourceID == source.id)) {
+            containers = source.pos.findInRange(FIND_STRUCTURES, 1, {
+                filter: (s) => s.structureType == STRUCTURE_CONTAINER
+            });
+        }
+    }
 
     //NOT NEEDED ONCE CONTAINERMINING IS A THING: SPAWN HARVESTER
     if (numberOfHarvesters < minHarvesters) {
         role = 'harvester';
         // try to spawn one
-        name = Game.spawns.Spawn1.spawnCustomCreep(energy, role);
+        name = Game.spawns.Spawn1.spawnCustomCreep(currEnergy, role);
         // if spawning failed and we have no harvesters left
-        console.log(energy);
+        // console.log(name);
         if (name == ERR_NOT_ENOUGH_ENERGY && numberOfHarvesters == 0) {
             // spawn one with what is available
             name = Game.spawns.Spawn1.spawnCustomCreep(
@@ -128,44 +134,34 @@ module.exports.loop = function () {
     }
     // //SPAWN MINER
     else
-     if(numberOfMiners < minMiners && numberOfMiners <= numberOfCouriers && energy >= 800){
+    if (numberOfMiners < minMiners && numberOfMiners <= numberOfCouriers && currEnergy >= 800 && containers.length > 0) {
         role = 'miner';
-        for(let spawnName in Game.spawns){
+        for (let spawnName in Game.spawns) {
             let spawn = Game.spawns[spawnName];
-            for(let source of sources){
+            for (let source of sources) {
                 //if there is no creep thats a miner and is assinged to the source and if there is a container
-                if(!_.some(creepsInRoom, c => c.memory.role == role && c.memory.sourceID == source.id)){
-                    let containers = source.pos.findInRange(FIND_STRUCTURES,1,{
-                        filter: (s) => s.structureType == STRUCTURE_CONTAINER
-                    });
-                    if(containers.length > 0){
-                        if(spawn.room.energyAvailable < 800){
-                            name = spawn.spawnMiner(source.id, 300, role);
-                        }
-                        else{
-                            name = spawn.spawnMiner(source.id, 800, role);
-                        }
-                    }
+                if (containers.length > 0) {
+                    name = spawn.spawnMiner(source.id, 800, role)
+                    console.log(name);
                 }
             }
         }
     }
     //SPAWN COURIER
-    else if(numberOfCouriers < minCouriers && energy >= 800){
+    else if (numberOfCouriers < minCouriers && currEnergy >= 800 && numberOfMiners > 0) {
         var role = 'courier';
-        for(let spawnName in Game.spawns){
+        for (let spawnName in Game.spawns) {
             let spawn = Game.spawns[spawnName];
-            let containers = spawn.room.find(FIND_STRUCTURES,{
+            let containers = spawn.room.find(FIND_STRUCTURES, {
                 filter: (s) => s.structureType == STRUCTURE_CONTAINER
             })
-            for(let container of containers){
+            for (let container of containers) {
                 //if there is no creep thats a courier and is assinged to the container
-                if(!_.some(creepsInRoom, c => c.memory.role == 'courier' && c.memory.containerID == container.id)){
-                    if(numberOfCouriers < numberOfMiners && spawn.room.energyAvailable < 800){
-                        name = spawn.spawnCourier(container.id,300, role);
-                    }
-                    else{
-                        name = spawn.spawnCourier(container.id,800, role);
+                if (!_.some(creepsInRoom, c => c.memory.role == 'courier' && c.memory.containerID == container.id)) {
+                    if (numberOfCouriers < numberOfMiners && spawn.room.energyAvailable < 800) {
+                        name = spawn.spawnCourier(container.id, 300, role);
+                    } else {
+                        name = spawn.spawnCourier(container.id, 800, role);
                     }
                 }
             }
@@ -175,8 +171,9 @@ module.exports.loop = function () {
     else if (numberOfUpgraders < minUpgraders) {
         role = 'upgrader';
         // try to spawn one
-        Game.spawns.Spawn1.spawnCustomCreep(energy, role);
-         // Game.spawns.Spawn1.spawnUpgrader();
+        name = Game.spawns.Spawn1.spawnCustomCreep(energy, role);
+        console.log(name);
+        // Game.spawns.Spawn1.spawnUpgrader();
     }
     //SPAWN BUILDER
     else if (numberOfBuilders < minBuilders) {
@@ -246,18 +243,18 @@ module.exports.loop = function () {
     //     console.log('Error while spawning: '+name);
     // }
 
-    Game.spawns.Spawn1.memory.TicksToWaitForStatus = Game.spawns.Spawn1.memory.TicksToWaitForStatus-1;
-    if(Game.spawns.Spawn1.memory.TicksToWaitForStatus <= 0){
+    Game.spawns.Spawn1.memory.TicksToWaitForStatus = Game.spawns.Spawn1.memory.TicksToWaitForStatus - 1;
+    if (Game.spawns.Spawn1.memory.TicksToWaitForStatus <= 0) {
         //write to spawn memory
-        console.log('Next creep: '+role);
-        console.log('Harvesters: '+numberOfHarvesters);
-        console.log('Miners:       '+numberOfMiners);
-        console.log('Couriers:     '+numberOfCouriers);
+        console.log('Next creep: ' + role);
+        console.log('Harvesters: ' + numberOfHarvesters);
+        console.log('Miners:       ' + numberOfMiners);
+        console.log('Couriers:     ' + numberOfCouriers);
         // console.log('LDHarvesterW26N12: '+numLDHarvesterW26N12);
         // console.log('LDHarvesterW25N11: '+numLDHarvesterW25N11);
-        console.log('Upgraders:    '+numberOfUpgraders);
-        console.log('Builders:     '+numberOfBuilders);
-        console.log('Repairers:    '+numberOfRepairers);
+        console.log('Upgraders:    ' + numberOfUpgraders);
+        console.log('Builders:     ' + numberOfBuilders);
+        console.log('Repairers:    ' + numberOfRepairers);
         console.log('-------------');
         Game.spawns.Spawn1.memory.TicksToWaitForStatus = 10;
     }
